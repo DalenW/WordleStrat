@@ -1,60 +1,104 @@
-# This is a sample Python script.
+# represents a letter
+class Letter:
+    def __init__(self, letter: str, count: int = 0):
+        self.letter = letter
+        self.count = count
+        self.position_rankings = [0, 0, 0, 0, 0]
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+    def __str__(self):
+        return f"{self.letter}: {self.count} {self.position_rankings}"
 
+    def __eq__(self, other):
+        return self.letter == other.letter
+
+    def __le__(self, other):
+        return self.count <= other.count
+
+    def __lt__(self, other):
+        return self.count < other.count
+
+    def __ge__(self, other):
+        return self.count >= other.count
+
+    def __gt__(self, other):
+        return self.count > other.count
+    
+# Global Variables
 file_name: str = "wordlewords.txt"
 words: [str] = []
-letter_counts: {str, int} = {}
+letters: {str, Letter} = {}
 filtered_words: [str] = [] # the words that only contain the top letters
+
 
 def get_letter_count():
     for word in words:
         for letter in word:
-            if letter in letter_counts:
-                letter_counts[letter] += 1
+            position = word.index(letter)
+            if letter in letters:
+                letters[letter].count += 1
             else:
-                letter_counts[letter] = 1
+                letters[letter] = Letter(letter, 1)
+            # update the position ranking
+            letters[letter].position_rankings[position] += 1
     print_letter_count()
 
 
 def print_letter_count():
-    for letter in letter_counts:
-        print(f"{letter}: {letter_counts[letter]}")
+    for letter in letters:
+        print(f"{letter}: {letters[letter]}")
 
 
-def get_top_letters(top_num=15) -> [(str, int)]:
+def get_top_letters(top_num=15) -> [Letter]:
     # Sort the dictionary by value
-    sorted_letter_counts = sorted(letter_counts.items(), key=lambda x: x[1], reverse=True)
-    top_letters = []
-    for i in range(top_num):
-        top_letters.append(sorted_letter_counts[i])
+    return sorted_letters()[:top_num]
 
-    return top_letters
+def sorted_letters() -> [Letter]:
+    """
+    Return an array of Letters sorted from top count to lowest count
+    :return:
+    """
+    return sorted(letters.values(), reverse=True)
 
 
 def print_top_letters(top_num=15):
     top_letters = get_top_letters(top_num)
-    letters: [] = []
+    the_letters: [] = []
     print("\n\n\nTop Letters:\n")
     for letter in top_letters:
-        letters.append(letter[0])
-        print(f"{letter[0]}: {letter[1]}")
-    print(letters)
+        the_letters.append(letter.letter)
+        print(letter)
+    print(the_letters)
+
+
+def get_words_with_filter(these_words: [str], these_letters: [str]) -> [str]:
+    """
+    Given an array of words and an array of letters, return an array of words that only contain the letters
+    :param these_words:
+    :param these_letters:
+    :return:
+    """
+    these_filtered_words = []
+    for word in these_words:
+        add_word = True
+        for letter in word:
+            if letter not in these_letters:
+                add_word = False
+        if add_word:
+            these_filtered_words.append(word)
+    return these_filtered_words
 
 
 def get_filtered_words():
+    """
+    Get the words that only contain the top 15 letters
+    :return:
+    """
     global filtered_words
-    # get_top_letters(), returns a tuple. get the first element of the tuple which is the letter
-    top_letters: [str] = [letter[0] for letter in get_top_letters()]
-    for word in words:
-        add_word: bool = True
-        for letter in word:
-            if letter not in top_letters:
-                add_word = False
-        if add_word:
-            filtered_words.append(word)
+    # get_top_letters(), returns an array of Letters. Get the letter from each Letter
+    top_letters: [str] = [letter.letter for letter in get_top_letters()]
+    filtered_words = get_words_with_filter(words, top_letters)
     print(f"Filtered Words: {len(filtered_words)}")
+    return filtered_words
 
 
 def strip_words():
