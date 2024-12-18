@@ -156,12 +156,14 @@ def build_word_ranks():
     sorted_word_ranks = sorted(this_word_ranks.items(), key=lambda x: x[1], reverse=True)
 
     # print top 10
+    print("Top 10")
     for i in range(10):
-        print(sorted_word_ranks[i])
+        print(sorted_word_ranks[i][0])
 
     # print bottom 10
+    print("Bottom 10")
     for i in range(10):
-        print(sorted_word_ranks[-i])
+        print(sorted_word_ranks[-i - 1][0])
 
     word_ranks = dict(sorted_word_ranks)
 
@@ -191,6 +193,7 @@ def print_top_3_guesses():
 
         top_3_guesses.append(word)
 
+    print("Top 3 Guesses")
     for guess in top_3_guesses:
         print(guess)
 
