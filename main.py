@@ -1,12 +1,26 @@
 # represents a letter
 class Letter:
     def __init__(self, letter: str, count: int = 0):
-        self.letter = letter
-        self.count = count
-        self.position_rankings = [0, 0, 0, 0, 0]
+        self.letter: str = letter
+        self.count: int = count
+        self.position_rankings: [int] = [0, 0, 0, 0, 0] # simply the sum of the position of the letter in our word list
 
     def top_position_index(self):
         return self.position_rankings.index(max(self.position_rankings))
+
+    def top_rank(self) -> int:
+        return max(self.position_rankings)
+
+    def rank_position(self, index: int) -> int:
+        """
+        Every time a letter appears in a position in a word, the rank is incremented by one on that position.
+        This means that the more times a letter appears in a position, the higher the rank.
+        It also means that the rank is not a percentage, or relative to other letters / positions.
+        This lets us not only see how often a letter appears in a position, but how also how common of a letter it is across all words
+        :param index:
+        :return:
+        """
+        return self.position_rankings[index]
 
     def __str__(self):
         return f"{self.letter}: {self.count} {self.position_rankings}"
@@ -28,157 +42,180 @@ class Letter:
 
     def __gt__(self, other):
         return self.count > other.count
-    
-# Global Variables
-file_name: str = "wordlewords.txt"
-words: [str] = []
+
+### Global Variables
 letters: {str, Letter} = {}
-filtered_words: [str] = [] # the words that only contain the top letters
+###
 
 
-def get_letter_count():
-    for word in words:
-        for letter in word:
-            position = word.index(letter)
-            if letter in letters:
-                letters[letter].count += 1
-            else:
-                letters[letter] = Letter(letter, 1)
-            # update the position ranking
-            letters[letter].position_rankings[position] += 1
-    print_letter_count()
+class Word:
+    def __init__(self, word: str):
+        self.letters: [Letter] = []
+        self.letter_count = len(word)
+        self.word = word.upper()
 
-
-def print_letter_count():
-    for letter in letters:
-        print(f"{letter}: {letters[letter]}")
-
-
-def get_top_letters(top_num=15) -> [Letter]:
-    # Sort the dictionary by value
-    return sorted_letters()[:top_num]
-
-def sorted_letters() -> [Letter]:
-    """
-    Return an array of Letters sorted from top count to lowest count
-    :return:
-    """
-    return sorted(letters.values(), reverse=True)
-
-
-def print_top_letters(top_num=15):
-    top_letters = get_top_letters(top_num)
-    the_letters: [] = []
-    print("\n\n\nTop Letters:\n")
-    for letter in top_letters:
-        the_letters.append(letter.letter)
-        print(letter)
-    print(the_letters)
-
-
-def get_words_with_filter(these_words: [str], these_letters: [str]) -> [str]:
-    """
-    Given an array of words and an array of letters, return an array of words that only contain the letters
-    :param these_words:
-    :param these_letters:
-    :return:
-    """
-    these_filtered_words = []
-    for word in these_words:
-        add_word = True
-        for letter in word:
-            if letter not in these_letters:
-                add_word = False
-        if add_word:
-            these_filtered_words.append(word)
-    return these_filtered_words
-
-
-def get_filtered_words(top_letter_num=15) -> [str]:
-    """
-    Get the words that only contain the top 15 letters
-    :return:
-    """
-    global filtered_words
-    # get_top_letters(), returns an array of Letters. Get the letter from each Letter
-    top_letters: [str] = [letter.letter for letter in get_top_letters(top_letter_num)]
-    filtered_words = get_words_with_filter(words, top_letters)
-    print(f"Filtered Words: {len(filtered_words)}")
-    return filtered_words
-
-
-def strip_words():
-    global words
-    for i in range(len(words)):
-        words[i] = words[i].strip()
-
-
-def read_file(file_name):
-    global words
-
-    with open(file_name, 'r') as file:
-        words = file.readlines()
-
-    print(f"Words: {len(words)}")
-    strip_words()
-
-
-
-def find_top_3_words(num_of_words=3, skip_letters=3):
-    top_letter_count = num_of_words * 5
-    top_words: [str] = []
-    top_letters: [Letter] = get_top_letters(top_letter_count)
-    filtered_words: [str] = get_filtered_words(top_letter_count)
-
-    def find_top_word(words, letters):
+    def rank(self) -> float:
         """
-        Given a list of (assumed) filtered words and a list of the top 15 letters.
-        Find the top word that contains the top letter in its top position, and includes letters in the top 15 , minus the letters in the next 3 positions
-        :param words:
-        :param letters:
+        Ranks the word based on the rank of each letter in the word.
+        As said in the letter rank documentation, the more common a word is the higher it's rank.
+        This means that words with very common letters will have a much higher rank that words with less common letters.
         :return:
         """
+        letter_ranks = []
+        # get each letter rank
+        for i in range(self.letter_count):
+            letter = self.letters[i]
+            rank = letter.rank_position(i) # / letter.top_rank()
+            letter_ranks.append(rank)
+        return sum(letter_ranks) / self.letter_count # no need to divide by the letter count, as all words are the same length
 
-        top_letter: Letter = letters.pop(0)
-        filtered_letters: [str] = [letter.letter for letter in letters]
-        filtered_letters = filtered_letters[skip_letters:]
-        filtered_letters.append(top_letter.letter)
+    @property
+    def word(self) -> str:
+        return self._word
 
-        narrowed_words: [str] = get_words_with_filter(words, filtered_letters)
+    @word.setter
+    def word(self, word: str):
+        self._word = word
+        self.letter_count = len(word)
+        self.letters = []
 
-        for word in narrowed_words:
-            if word[top_letter.top_position_index()] == top_letter.letter:
-                # also check that the word is made up of unique letters
-                unique_letters = set(word)
-                if len(unique_letters) == len(word):
-                    return word
+        for letter in word:
+            self.letters.append(letters[letter])
 
-        return None
+    def __str__(self):
+        return f"{self._word} {self.rank()}"
 
-    for i in range(num_of_words):
-        top_word = find_top_word(filtered_words, top_letters)
-        if top_word is None:
-            print(f"Could not find a top word. We have {top_words}")
-            # sometimes skip letters may go negative. but keeping it at 0 makes a infinite loop so let it go negative
-            return find_top_3_words(num_of_words, skip_letters - 1)
+    def __eq__(self, other):
+        return self._word == other._word
 
-        top_words.append(top_word)
-        filtered_words.remove(top_word)
-        # remove the letters in the top word from the top_letters
-        for letter in top_word:
-            if letter in top_letters:
-                top_letters.remove(letter)
 
-    print(f"Top {num_of_words} Words: {top_words}")
-    return top_words
+    def __lt__(self, other):
+        return self.rank() < other.rank()
+
+    def __le__(self, other):
+        return self.rank() <= other.rank()
+
+    def __gt__(self, other):
+        return self.rank() > other.rank()
+
+    def __ge__(self, other):
+        return self.rank() >= other.rank()
+
+    def __hash__(self):
+        return hash(self._word)
+
+
+
+### More Global Variables
+word_ranks: {Word, int} = {}
+file_name: str = "wordlewords.txt"
+###
+
+
+def get_letter_foundation() -> {str, Letter}:
+    """
+    Builds a list of letters and their objects
+    :return:
+    """
+    these_letters: {str, Letter} = {}
+
+    for i in range(26):
+        letter = chr(i + 65)
+        these_letters[letter] = Letter(letter)
+
+    return these_letters
+
+
+def build_word_ranks():
+    """
+    Builds the word_ranks
+    :param words:
+    :return:
+    """
+    global word_ranks
+    words_str: [str] = read_file(file_name)
+    words: [Word] = []
+    this_word_ranks: {Word, int} = {}
+
+    # build letter rankings, compile word list
+    for word_str in words_str:
+        word = Word(word_str)
+        words.append(word)
+        for i in range(word.letter_count):
+            letter = word.letters[i]
+            letter.count += 1
+            letter.position_rankings[i] += 1
+
+    # print_letters()
+
+    # compile word ranks
+    for word in words:
+        this_word_ranks[word] = word.rank()
+
+    # sort word ranks from largest to smallest
+    sorted_word_ranks = sorted(this_word_ranks.items(), key=lambda x: x[1], reverse=True)
+
+    # print top 10
+    for i in range(10):
+        print(sorted_word_ranks[i])
+
+    # print bottom 10
+    for i in range(10):
+        print(sorted_word_ranks[-i])
+
+    word_ranks = dict(sorted_word_ranks)
+
+
+def print_top_3_guesses():
+    """
+    Returns the top 3 guesses with unique letters
+    :return:
+    """
+    top_3_guesses = []
+    for word in word_ranks:
+        # first check if the word has unique letters
+        if len(set(word.word)) != len(word.word):
+            continue
+        # then make sure that the word is not made up of letters in the top 3 guesses list
+        if len(top_3_guesses) == 3:
+            break
+
+        skip_word = False
+        for guess in top_3_guesses:
+            for letter in guess.word:
+                if letter in word.word:
+                    skip_word = True
+
+        if skip_word:
+            continue
+
+        top_3_guesses.append(word)
+
+    for guess in top_3_guesses:
+        print(guess)
+
+
+def print_letters():
+    for l in letters:
+        print(letters[l])
+
+
+def read_file(this_file_name: str) -> [str]:
+    words_str: [str] = []
+
+    with open(this_file_name, 'r') as file:
+        for line in file:
+            words_str.append(line.strip())
+
+    print(f"Words: {len(words_str)}")
+    return words_str
 
 
 def main():
-    read_file(file_name)
-    get_letter_count()
-    print_top_letters()
-    get_filtered_words()
-    find_top_3_words()
+    global letters
+    letters = get_letter_foundation()
+    build_word_ranks()
+    print_top_3_guesses()
 
 
 # Press the green button in the gutter to run the script.
